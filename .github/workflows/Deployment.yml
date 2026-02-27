@@ -11,5 +11,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        run: |
-          echo "WORK IN PROGRESS"
+
+      - name: WIP
+        run: echo "WORK IN PROGRESS: Deployment steps will be added here soon!"
