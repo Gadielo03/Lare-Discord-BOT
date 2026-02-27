@@ -1,0 +1,15 @@
+name: Deploy New Version
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        run: |
+          echo "WORK IN PROGRESS"
