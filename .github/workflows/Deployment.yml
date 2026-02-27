@@ -13,4 +13,4 @@ jobs:
         uses: actions/checkout@v2
 
       - name: WIP
-        run: echo "WORK IN PROGRESS: Deployment steps will be added here soon!"
+        run: echo "WORK IN PROGRESS - Deployment steps will be added here soon"
