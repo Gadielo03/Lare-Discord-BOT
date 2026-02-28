@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import asyncio
-from logger import log
+from utils.logger import log
 from services.queue_manager import QueueManager
 from services.youtube_service import YouTubeService
 from services.music_controls import MusicControlView

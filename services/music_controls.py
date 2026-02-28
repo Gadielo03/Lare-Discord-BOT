@@ -2,7 +2,7 @@
 import discord
 from discord.ui import View, Button
 import random
-from ui_colors import ColorPalette
+from utils.ui_colors import ColorPalette
 
 
 class MusicControlView(View):

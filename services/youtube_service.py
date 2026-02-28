@@ -1,6 +1,6 @@
 """YouTube Service - Handles YouTube video information extraction"""
 import yt_dlp
-from logger import log
+from utils.logger import log
 
 
 class YouTubeService:

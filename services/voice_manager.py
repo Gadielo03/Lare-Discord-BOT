@@ -1,7 +1,7 @@
 """Voice Channel Manager Service - Handles voice channel operations"""
 import discord
 import asyncio
-from logger import log
+from utils.logger import log
 
 
 class VoiceManager:

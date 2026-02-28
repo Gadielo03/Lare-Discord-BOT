@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from ui_colors import ColorPalette
+from utils.ui_colors import ColorPalette
 
 class General(commands.Cog):
     """General commands for the bot"""

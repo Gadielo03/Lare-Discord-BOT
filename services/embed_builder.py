@@ -1,6 +1,6 @@
 """Embed Builder Service - Creates styled embeds for music bot"""
 import discord
-from ui_colors import ColorPalette
+from utils.ui_colors import ColorPalette
 
 
 class EmbedBuilder:

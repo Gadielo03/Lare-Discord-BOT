@@ -1,6 +1,6 @@
 """Inactivity Manager - Handles bot disconnection after inactivity"""
 import asyncio
-from logger import log
+from utils.logger import log
 
 
 class InactivityManager:

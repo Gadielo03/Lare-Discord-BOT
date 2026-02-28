@@ -1,6 +1,6 @@
 """Queue Manager Service - Handles music queue operations"""
 from collections import deque
-from logger import log
+from utils.logger import log
 
 
 class QueueManager:
