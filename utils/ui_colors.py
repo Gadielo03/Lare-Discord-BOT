@@ -16,6 +16,7 @@ class ColorPalette:
     INFO = ACCENT             # Information messages - Pink
     WARNING = LIGHT           # Warning messages - Coral
     ERROR = SECONDARY         # Error messages - Magenta
+    LOVE = ACCENT             # Love/affection commands - Pink
     
     NOW_PLAYING = PRIMARY     # Currently playing song
     QUEUE = ACCENT           # Queue display

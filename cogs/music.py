@@ -8,6 +8,7 @@ from services.music_controls import MusicControlView
 from services.inactivity_manager import InactivityManager
 from services.voice_manager import VoiceManager
 from services.embed_builder import EmbedBuilder
+from services.gif_service import GifService
 
 
 class Music(commands.Cog):
@@ -20,6 +21,7 @@ class Music(commands.Cog):
         self.voice_manager = VoiceManager(bot)
         self.inactivity_manager = InactivityManager(bot, self.queue_manager)
         self.embed_builder = EmbedBuilder()
+        self.gif_service = GifService()
     
     
     async def play_next(self, ctx):
@@ -42,7 +44,8 @@ class Music(commands.Cog):
                 await ctx.send(embed=embed, view=view)
         else:
             log.debug(f'Queue empty in {ctx.guild.name}, starting inactivity timer')
-            embed = self.embed_builder.queue_empty()
+            gif_url = await self.gif_service.get_random_gif("empty")
+            embed = self.embed_builder.queue_empty(gif_url)
             await ctx.send(embed=embed)
             self.inactivity_manager.reset_timer(ctx.guild.id)
     
@@ -99,7 +102,8 @@ class Music(commands.Cog):
         log.debug(f'User {ctx.author} requested queue in {ctx.guild.name}')
         
         if self.queue_manager.is_empty(ctx.guild.id):
-            embed = self.embed_builder.queue_empty()
+            gif_url = await self.gif_service.get_random_gif("empty")
+            embed = self.embed_builder.queue_empty(gif_url)
             await ctx.send(embed=embed)
             return
         
