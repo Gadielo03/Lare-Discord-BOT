@@ -1,10 +1,88 @@
 import discord
 from discord.ext import commands
+from discord.ui import View, Button
 import yt_dlp
 import asyncio
 from collections import deque
 import random
 from logger import log
+from ui_colors import ColorPalette
+
+class MusicControlView(View):
+    """Interactive music control buttons"""
+    
+    def __init__(self, cog, ctx):
+        super().__init__(timeout=300)  # 5 minutes timeout
+        self.cog = cog
+        self.ctx = ctx
+    
+    @discord.ui.button(label="Pause", style=discord.ButtonStyle.primary, emoji="⏸️")
+    async def pause_button(self, interaction: discord.Interaction, button: Button):
+        voice_client = self.ctx.voice_client
+        if voice_client and voice_client.is_playing():
+            voice_client.pause()
+            button.label = "Resume"
+            button.emoji = "▶️"
+            await interaction.response.edit_message(view=self)
+            await interaction.followup.send("⏸️ Music paused", ephemeral=True)
+        elif voice_client and voice_client.is_paused():
+            voice_client.resume()
+            button.label = "Pause"
+            button.emoji = "⏸️"
+            await interaction.response.edit_message(view=self)
+            await interaction.followup.send("▶️ Music resumed", ephemeral=True)
+        else:
+            await interaction.response.send_message("❌ No music is playing", ephemeral=True)
+    
+    @discord.ui.button(label="Skip", style=discord.ButtonStyle.secondary, emoji="⏭️")
+    async def skip_button(self, interaction: discord.Interaction, button: Button):
+        voice_client = self.ctx.voice_client
+        if voice_client and voice_client.is_playing():
+            voice_client.stop()
+            await interaction.response.send_message("⏭️ Skipped to next song", ephemeral=True)
+        else:
+            await interaction.response.send_message("❌ No music is playing", ephemeral=True)
+    
+    @discord.ui.button(label="Stop", style=discord.ButtonStyle.danger, emoji="⏹️")
+    async def stop_button(self, interaction: discord.Interaction, button: Button):
+        voice_client = self.ctx.voice_client
+        if voice_client:
+            queue = self.cog.get_queue(self.ctx.guild.id)
+            queue.clear()
+            await voice_client.disconnect()
+            await interaction.response.send_message("⏹️ Music stopped and queue cleared", ephemeral=True)
+            # Disable all buttons
+            for child in self.children:
+                child.disabled = True
+            await interaction.message.edit(view=self)
+        else:
+            await interaction.response.send_message("❌ Bot is not in a voice channel", ephemeral=True)
+    
+    @discord.ui.button(label="Shuffle", style=discord.ButtonStyle.secondary, emoji="🔀")
+    async def shuffle_button(self, interaction: discord.Interaction, button: Button):
+        queue = self.cog.get_queue(self.ctx.guild.id)
+        if len(queue) < 2:
+            await interaction.response.send_message("❌ Not enough songs to shuffle", ephemeral=True)
+        else:
+            random.shuffle(queue)
+            await interaction.response.send_message(f"🔀 Shuffled {len(queue)} songs", ephemeral=True)
+    
+    @discord.ui.button(label="Queue", style=discord.ButtonStyle.secondary, emoji="📜")
+    async def queue_button(self, interaction: discord.Interaction, button: Button):
+        queue = self.cog.get_queue(self.ctx.guild.id)
+        if len(queue) == 0:
+            await interaction.response.send_message("📭 Queue is empty", ephemeral=True)
+        else:
+            queue_list = "\n".join([f"`{i+1}.` **{song['title']}**" for i, song in enumerate(list(queue)[:10])])
+            if len(queue) > 10:
+                queue_list += f"\n\n*...and {len(queue) - 10} more*"
+            embed = discord.Embed(
+                title="🎵 Current Queue",
+                description=queue_list,
+                color=ColorPalette.QUEUE
+            )
+            embed.set_footer(text=f"Total: {len(queue)} songs")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class Music(commands.Cog):
     """Music commands for the bot"""
@@ -61,10 +139,38 @@ class Music(commands.Cog):
                         self.play_next(ctx), self.bot.loop
                     )
                 )
-                await ctx.send(f"Playing: **{song_info['title']}**")
+                embed = discord.Embed(
+                    title="🎵 Now Playing",
+                    description=f"**{song_info['title']}**",
+                    color=ColorPalette.NOW_PLAYING
+                )
+                
+                # Add thumbnail if available
+                if 'thumbnail' in song_info and song_info['thumbnail']:
+                    embed.set_thumbnail(url=song_info['thumbnail'])
+                
+                # Add duration if available
+                if 'duration' in song_info and song_info['duration']:
+                    minutes, seconds = divmod(song_info['duration'], 60)
+                    embed.add_field(name="Duration", value=f"{int(minutes)}:{int(seconds):02d}", inline=True)
+                
+                # Add channel if available
+                if 'uploader' in song_info and song_info['uploader']:
+                    embed.add_field(name="Channel", value=song_info['uploader'], inline=True)
+                
+                embed.set_footer(text=f"Requested by {ctx.author.display_name}")
+                view = MusicControlView(self, ctx)
+                await ctx.send(embed=embed, view=view)
         else:
             log.debug(f'Queue empty in {ctx.guild.name}, starting inactivity timer')
-            await ctx.send("📭 The queue is empty. Add more songs with `/play`!")
+            embed = discord.Embed(
+                title="📭 Queue Empty",
+                description="No more songs in the queue.\nAdd more songs with `/play`!",
+                color=ColorPalette.EMPTY
+            )
+            # Add animated GIF for empty queue
+            embed.set_image(url="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcGg5Njk0NHBtOGRmMHhsNGE4NDF4ZTFmZDJ5aGJvNGprZm1rYWRhbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hEc4k5pN17GZq/giphy.gif")
+            await ctx.send(embed=embed)
             self.reset_inactivity_timer(ctx.guild.id)
     
     @commands.hybrid_command(name="play", description="Play a song from YouTube or add to queue")
@@ -118,12 +224,21 @@ class Music(commands.Cog):
                                     song_info = ydl2.extract_info(f"https://www.youtube.com/watch?v={entry['id']}", download=False)
                                     queue.append({
                                         'url': song_info['url'],
-                                        'title': entry['title']
+                                        'title': entry['title'],
+                                        'thumbnail': song_info.get('thumbnail'),
+                                        'duration': song_info.get('duration'),
+                                        'uploader': song_info.get('uploader')
                                     })
                                     songs_added += 1
                         
                         log.success(f'Added {songs_added} songs from playlist to queue in {ctx.guild.name}')
-                        await ctx.send(f"added **{songs_added}** songs from the playlist to the queue!")
+                        embed = discord.Embed(
+                            title="📑 Playlist Added",
+                            description=f"Added **{songs_added}** songs to the queue!",
+                            color=ColorPalette.ADDED
+                        )
+                        embed.set_footer(text=f"Requested by {ctx.author.display_name}")
+                        await ctx.send(embed=embed)
                         
                         if not ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
                             await self.play_next(ctx)
@@ -137,19 +252,50 @@ class Music(commands.Cog):
                     info = ydl.extract_info(param, download=False)
                     url = info['url']
                     title = info['title']
+                    thumbnail = info.get('thumbnail')
+                    duration = info.get('duration')
+                    uploader = info.get('uploader')
                 else:
                     info = ydl.extract_info(f"ytsearch:{param}", download=False)
-                    url = info['entries'][0]['url']
-                    title = info['entries'][0]['title']
+                    entry = info['entries'][0]
+                    url = entry['url']
+                    title = entry['title']
+                    thumbnail = entry.get('thumbnail')
+                    duration = entry.get('duration')
+                    uploader = entry.get('uploader')
                     
             queue = self.get_queue(ctx.guild.id)
-            queue.append({'url': url, 'title': title})
+            queue.append({
+                'url': url,
+                'title': title,
+                'thumbnail': thumbnail,
+                'duration': duration,
+                'uploader': uploader
+            })
             log.info(f'Song added to queue: "{title}" (Position: {len(queue)}) in {ctx.guild.name}')
             
             if not ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
                 await self.play_next(ctx)
             else:
-                await ctx.send(f"Adding to queue: **{title}** (Position: {len(queue)})")
+                embed = discord.Embed(
+                    title="➕ Added to Queue",
+                    description=f"**{title}**",
+                    color=ColorPalette.ADDED
+                )
+                
+                # Add thumbnail
+                if thumbnail:
+                    embed.set_thumbnail(url=thumbnail)
+                
+                # Add duration if available
+                if duration:
+                    minutes, seconds = divmod(duration, 60)
+                    embed.add_field(name="Duration", value=f"{int(minutes)}:{int(seconds):02d}", inline=True)
+                
+                embed.add_field(name="Position", value=f"#{len(queue)}", inline=True)
+                embed.set_footer(text=f"Requested by {ctx.author.display_name}")
+                view = MusicControlView(self, ctx)
+                await ctx.send(embed=embed, view=view)
                 
         except Exception as e:
             log.error(f'Error adding to queue: {e} (User: {ctx.author}, Query: {param})')
@@ -162,16 +308,23 @@ class Music(commands.Cog):
         log.debug(f'User {ctx.author} requested queue in {ctx.guild.name} ({len(queue)} songs)')
         
         if len(queue) == 0:
-            await ctx.send("📭 The queue is empty")
+            embed = discord.Embed(
+                title="📭 Queue Empty",
+                description="No songs in the queue. Use `/play` to add some!",
+                color=ColorPalette.EMPTY
+            )
+            await ctx.send(embed=embed)
             return
         
-        queue_list = "\n".join([f"{i+1}. {song['title']}" for i, song in enumerate(queue)])
+        queue_list = "\n".join([f"`{i+1}.` **{song['title']}**" for i, song in enumerate(queue)])
         embed = discord.Embed(
             title="🎵 Current Music Queue",
             description=queue_list,
-            color=discord.Color.blue()
+            color=ColorPalette.QUEUE
         )
-        await ctx.send(embed=embed)
+        embed.set_footer(text=f"Total songs: {len(queue)}")
+        view = MusicControlView(self, ctx)
+        await ctx.send(embed=embed, view=view)
     
     @commands.hybrid_command(name="skip", description="Skip to the next song")
     async def skip(self, ctx):
@@ -179,7 +332,12 @@ class Music(commands.Cog):
         if ctx.voice_client and ctx.voice_client.is_playing():
             log.info(f'User {ctx.author} skipped song in {ctx.guild.name}')
             ctx.voice_client.stop()
-            await ctx.send("Skipping to the next song...")
+            embed = discord.Embed(
+                title="⏭️ Song Skipped",
+                description="Moving to the next song...",
+                color=ColorPalette.INFO
+            )
+            await ctx.send(embed=embed)
         else:
             log.warning(f'User {ctx.author} tried to skip but no song playing in {ctx.guild.name}')
             await ctx.send("❌ No Song in the queue to skip")
@@ -191,7 +349,12 @@ class Music(commands.Cog):
         if voice_client and voice_client.is_playing():
             log.info(f'User {ctx.author} paused music in {ctx.guild.name}')
             voice_client.pause()
-            await ctx.send("Music paused")
+            embed = discord.Embed(
+                title="⏸️ Music Paused",
+                description="Use `/resume` to continue playing",
+                color=ColorPalette.WARNING
+            )
+            await ctx.send(embed=embed)
         else:
             log.warning(f'User {ctx.author} tried to pause but no music playing in {ctx.guild.name}')
             await ctx.send("❌ No music is currently playing")
@@ -203,7 +366,12 @@ class Music(commands.Cog):
         if voice_client and voice_client.is_paused():
             log.info(f'User {ctx.author} resumed music in {ctx.guild.name}')
             voice_client.resume()
-            await ctx.send("Music resumed")
+            embed = discord.Embed(
+                title="▶️ Music Resumed",
+                description="Playback has been resumed",
+                color=ColorPalette.SUCCESS
+            )
+            await ctx.send(embed=embed)
         else:
             log.warning(f'User {ctx.author} tried to resume but no music paused in {ctx.guild.name}')
             await ctx.send("❌ No music is currently paused")
@@ -218,7 +386,12 @@ class Music(commands.Cog):
         if voice_client:
             log.info(f'User {ctx.author} stopped music in {ctx.guild.name}')
             await voice_client.disconnect()
-            await ctx.send("Music stopped and queue cleared")
+            embed = discord.Embed(
+                title="⏹️ Music Stopped",
+                description="Disconnected from voice channel and cleared the queue",
+                color=ColorPalette.ERROR
+            )
+            await ctx.send(embed=embed)
         else:
             log.warning(f'User {ctx.author} tried to stop but bot not in voice channel in {ctx.guild.name}')
             await ctx.send("❌ The bot is not in a voice channel")
@@ -235,7 +408,12 @@ class Music(commands.Cog):
         
         log.info(f'User {ctx.author} shuffled queue ({len(queue)} songs) in {ctx.guild.name}')
         random.shuffle(queue)
-        await ctx.send("🔀 The queue has been shuffled!")
+        embed = discord.Embed(
+            title="🔀 Queue Shuffled",
+            description=f"Randomized {len(queue)} songs in the queue",
+            color=ColorPalette.SECONDARY
+        )
+        await ctx.send(embed=embed)
 
 async def setup(bot):
     log.debug('Setting up Music cog')
