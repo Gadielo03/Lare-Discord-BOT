@@ -3,6 +3,7 @@ from discord.ext import commands
 import asyncio
 import os
 from dotenv import load_dotenv
+from logger import log
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -13,23 +14,23 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} Connected in Servers:\n')
+    log.info(f'{bot.user} connected to the following servers:')
     for server in bot.guilds:
-        print(f'{server.name} (id: {server.id})')
+        log.info(f'  • {server.name} (ID: {server.id})')
     
     try:
         synced = await bot.tree.sync()
-        print(f'Synced {len(synced)} slash command(s)')
+        log.success(f'Synced {len(synced)} slash command(s)')
     except Exception as e:
-        print(f'❌ Error syncing commands: {e}')
+        log.failed(f'Error syncing commands: {e}')
     
-    print('\n✅ Bot Hot N Ready!')
+    log.success('Bot is Hot N Ready!')
 
 @bot.event
 async def on_message(message):
     """Message Logger"""
     if message.author != bot.user:
-        print(f'Message from {message.author}: {message.content}')
+        log.debug(f'Message from {message.author}: {message.content}')
     await bot.process_commands(message)
 
 async def load_cogs():
@@ -38,9 +39,9 @@ async def load_cogs():
     for cog in cogs_list:
         try:
             await bot.load_extension(cog)
-            print(f'Loaded: {cog}')
+            log.success(f'Cog loaded: {cog}')
         except Exception as e:
-            print(f'Error loading {cog}: {e}')
+            log.failed(f'Error loading {cog}: {e}')
 
 async def main():
     async with bot:
