@@ -80,8 +80,14 @@ class Music(commands.Cog):
 
         if not ctx.voice_client:
             log.info(f'Connecting to voice channel: {channel.name} in {ctx.guild.name}')
-            await channel.connect()
-            self.reset_inactivity_timer(ctx.guild.id)
+            try:
+                await channel.connect()
+                log.success(f'Successfully connected to {channel.name}')
+                self.reset_inactivity_timer(ctx.guild.id)
+            except Exception as e:
+                log.error(f'Failed to connect to voice channel: {e}')
+                await ctx.send(f"❌ Could not connect to voice channel: {e}")
+                return
         
         await ctx.send(f"🔍 Searching: **{param}**...")
         
