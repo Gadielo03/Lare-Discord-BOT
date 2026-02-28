@@ -10,7 +10,7 @@ class CustomLogger:
     Shows: timestamp, level, module, message
     """
     
-    def __init__(self, name="Lare", level=logging.INFO):
+    def __init__(self, name="Lare", level=logging.DEBUG):
         self.logger = colorlog.getLogger(name)
         self.logger.setLevel(level)
         

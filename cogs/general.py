@@ -26,5 +26,36 @@ class General(commands.Cog):
         )
         await ctx.send(embed=embed)
 
+    @commands.hybrid_command(name="helpme", description="Provides a list of available commands")
+    async def helpme(self, ctx):
+        """Provides a list of available commands - automatically generated"""
+        embed = discord.Embed(
+            title="📚 Help Menu",
+            description="Here are all available commands organized by category:",
+            color=ColorPalette.INFO
+        )
+        
+        for cog_name, cog in sorted(self.bot.cogs.items()):
+            cog_commands = cog.get_commands()
+            
+            if cog_commands:
+                commands_list = []
+                for command in sorted(cog_commands, key=lambda x: x.name):
+                    description = command.description or command.help or "No description"
+                    commands_list.append(f"`/{command.name}` - {description}")
+                
+                if commands_list:
+                    cog_desc = cog.__doc__ or cog_name
+                    embed.add_field(
+                        name=f"__{cog_desc}__",
+                        value="\n".join(commands_list),
+                        inline=False
+                    )
+        
+        embed.set_footer(text=f"Total commands: {len(list(self.bot.commands))} | Use /command for details")
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url if self.bot.user.avatar else None)
+        
+        await ctx.send(embed=embed)
+
 async def setup(bot):
     await bot.add_cog(General(bot))
