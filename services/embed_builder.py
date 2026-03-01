@@ -184,6 +184,92 @@ class EmbedBuilder:
         if gif_url:
             embed.set_image(url=gif_url)
         return embed
+    
+    @staticmethod
+    def pokemon_pack_opening(username):
+        """Create embed for pack opening start"""
+        embed = discord.Embed(
+            title="🎴 Opening Pokemon Card Pack!",
+            description=f"**{username}** is opening a booster pack...\n✨ Good luck!",
+            color=ColorPalette.PRIMARY
+        )
+        return embed
+    
+    @staticmethod
+    def pokemon_card(card, pokemon_service):
+        """Create embed for individual Pokemon card"""
+        rarity_emoji = pokemon_service.get_rarity_emoji(card.get("rarity", "Common"))
+        
+        embed = discord.Embed(
+            title=f"{rarity_emoji} {card.get('name', 'Unknown Card')}",
+            color=ColorPalette.ACCENT
+        )
+        
+        if card.get("hp"):
+            embed.add_field(name="HP", value=card["hp"], inline=True)
+        
+        if card.get("types"):
+            types_str = " ".join([pokemon_service.get_type_emoji(t) + t for t in card["types"]])
+            embed.add_field(name="Type", value=types_str, inline=True)
+        
+        embed.add_field(name="Rarity", value=f"{rarity_emoji} {card.get('rarity', 'Unknown')}", inline=True)
+        
+        if card.get("set"):
+            embed.add_field(name="Set", value=card["set"], inline=True)
+        
+        if card.get("number"):
+            embed.add_field(name="Number", value=f"#{card['number']}", inline=True)
+        
+        if card.get("artist"):
+            embed.set_footer(text=f"Illustrated by {card['artist']}")
+        
+        if card.get("image_large"):
+            embed.set_image(url=card["image_large"])
+        elif card.get("image"):
+            embed.set_image(url=card["image"])
+        
+        return embed
+    
+    @staticmethod
+    def pokemon_pack_summary(cards, username, pokemon_service):
+        """Create embed summarizing all cards in pack"""
+        embed = discord.Embed(
+            title=f"🎴 {username}'s Pack Summary",
+            description="Here's what you got!",
+            color=ColorPalette.SUCCESS
+        )
+        
+        rarity_groups = {}
+        for card in cards:
+            rarity = card.get("rarity", "Common")
+            if rarity not in rarity_groups:
+                rarity_groups[rarity] = []
+            rarity_groups[rarity].append(card["name"])
+        
+        for rarity, card_names in sorted(rarity_groups.items(), 
+                                         key=lambda x: pokemon_service._get_rarity_value(x[0])):
+            emoji = pokemon_service.get_rarity_emoji(rarity)
+            cards_list = "\n".join([f"• {name}" for name in card_names])
+            embed.add_field(name=f"{emoji} {rarity}", value=cards_list, inline=False)
+        
+        embed.set_footer(text=f"Total cards: {len(cards)}")
+        return embed
+    
+    @staticmethod
+    def pokemon_set_info(set_info):
+        """Create embed for Pokemon set information"""
+        embed = discord.Embed(
+            title=f"🎴 {set_info.get('name', 'Unknown Set')}",
+            description=f"**Set ID:** {set_info.get('id')}\n**Release Date:** {set_info.get('release_date')}\n**Total Cards:** {set_info.get('card_count', {}).get('official', '?')}",
+            color=ColorPalette.PRIMARY
+        )
+        if set_info.get('logo'):
+            embed.set_thumbnail(url=set_info['logo'])
+        if set_info.get('serie'):
+            serie = set_info['serie']
+            if isinstance(serie, dict):
+                embed.add_field(name="Series", value=serie.get('name', 'Unknown'), inline=True)
+        return embed
 
     @staticmethod
     def kiss(author, member, gif_url):

@@ -2,8 +2,11 @@ import discord
 from discord.ext import commands
 import asyncio
 import os
+import signal
+import sys
 from dotenv import load_dotenv
 from utils.logger import log
+from services.http_service import HttpService
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -36,7 +39,7 @@ async def on_message(message):
 
 async def load_cogs():
     """Cog Loader"""
-    cogs_list = ['cogs.music', 'cogs.general', 'cogs.love']
+    cogs_list = ['cogs.music', 'cogs.general', 'cogs.love', 'cogs.pokemon']
     for cog in cogs_list:
         try:
             await bot.load_extension(cog)
@@ -44,10 +47,49 @@ async def load_cogs():
         except Exception as e:
             log.failed(f'Error loading {cog}: {e}')
 
+async def cleanup():
+    """Cleanup resources before shutdown"""
+    log.info("🛑 Shutting down gracefully...")
+    
+    try:
+        http_service = HttpService()
+        await http_service.close()
+        log.success("✅ HTTP sessions closed")
+    except Exception as e:
+        log.warning(f"Error closing HTTP service: {e}")
+    
+    try:
+        await bot.close()
+        log.success("✅ Bot disconnected")
+    except Exception as e:
+        log.warning(f"Error closing bot: {e}")
+    
+    log.success("👋 Goodbye!")
+
 async def main():
-    async with bot:
-        await load_cogs()
-        await bot.start(TOKEN)
+    try:
+        async with bot:
+            await load_cogs()
+            await bot.start(TOKEN)
+    except KeyboardInterrupt:
+        log.info("⚠️  Keyboard interrupt received")
+    except Exception as e:
+        log.error(f"Unexpected error: {e}")
+    finally:
+        await cleanup()
+
+def handle_sigterm(signum, frame):
+    """Handle SIGTERM signal"""
+    log.info("⚠️  SIGTERM received")
+    sys.exit(0)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    signal.signal(signal.SIGTERM, handle_sigterm)
+    signal.signal(signal.SIGINT, handle_sigterm)
+    
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        log.info("👋 Bot stopped by user")
+    except Exception as e:
+        log.error(f"Fatal error: {e}")
