@@ -325,4 +325,79 @@ class EmbedBuilder:
         if bot_avatar_url:
             embed.set_thumbnail(url=bot_avatar_url)
         
+        return embed    
+    @staticmethod
+    def admin_today_logs(filename, file_size_kb):
+        """Create embed for today's log file"""
+        embed = discord.Embed(
+            title="📄 Today's Log File",
+            description="Here's the log file for today:",
+            color=ColorPalette.INFO
+        )
+        embed.add_field(name="📝 Filename", value=f"`{filename}`", inline=False)
+        embed.add_field(name="📊 File Size", value=f"{file_size_kb:.2f} KB", inline=True)
+        embed.add_field(name="📅 Date", value=f"{filename.split('_')[1].split('.')[0][:4]}-{filename.split('_')[1].split('.')[0][4:6]}-{filename.split('_')[1].split('.')[0][6:]}", inline=True)
+        embed.set_footer(text="💡 Tip: Use /getallogs for all logs in a zip")
+        return embed
+    
+    @staticmethod
+    def admin_logs_archive(files_count, total_size_kb, zip_size_kb):
+        """Create embed for logs archive"""
+        compression_ratio = ((total_size_kb - zip_size_kb) / total_size_kb * 100) if total_size_kb > 0 else 0
+        
+        embed = discord.Embed(
+            title="📦 Logs Archive Created",
+            description="All log files have been compressed successfully!",
+            color=ColorPalette.SUCCESS
+        )
+        embed.add_field(name="📁 Total Files", value=f"{files_count} files", inline=True)
+        embed.add_field(name="📏 Original Size", value=f"{total_size_kb:.2f} KB", inline=True)
+        embed.add_field(name="🗜️ Compressed Size", value=f"{zip_size_kb:.2f} KB", inline=True)
+        embed.add_field(name="💾 Compression Ratio", value=f"{compression_ratio:.1f}% smaller", inline=False)
+        embed.set_footer(text="✨ Archive ready for download!")
+        return embed
+    
+    @staticmethod
+    def admin_logs_cleanup(deleted_count, kept_count, days_kept=7):
+        """Create embed for logs cleanup results"""
+        embed = discord.Embed(
+            title="🗑️ Logs Cleanup Complete",
+            description=f"Old log files have been cleaned up. Keeping last {days_kept} days.",
+            color=ColorPalette.WARNING
+        )
+        embed.add_field(name="❌ Deleted", value=f"{deleted_count} files", inline=True)
+        embed.add_field(name="✅ Kept", value=f"{kept_count} files", inline=True)
+        embed.add_field(name="⏱️ Retention", value=f"{days_kept} days", inline=True)
+        
+        if deleted_count > 0:
+            embed.set_footer(text="💡 Freed up disk space!")
+        else:
+            embed.set_footer(text="✨ All logs are recent!")
+        
+        return embed
+    
+    @staticmethod
+    def admin_logs_statistics(total_files, total_size_mb, oldest_log, newest_log):
+        """Create embed for logs statistics"""
+        embed = discord.Embed(
+            title="📊 Logs Statistics",
+            description="Overview of all log files in the system:",
+            color=ColorPalette.ACCENT
+        )
+        embed.add_field(name="📁 Total Files", value=f"{total_files} files", inline=True)
+        embed.add_field(name="💾 Total Size", value=f"{total_size_mb:.2f} MB", inline=True)
+        embed.add_field(name="⚡ Avg Size", value=f"{(total_size_mb / total_files):.2f} MB", inline=True)
+        embed.add_field(name="📅 Oldest Log", value=oldest_log, inline=True)
+        embed.add_field(name="🆕 Newest Log", value=newest_log, inline=True)
+        
+        try:
+            from datetime import datetime
+            oldest_date = datetime.strptime(oldest_log, "%Y-%m-%d")
+            newest_date = datetime.strptime(newest_log, "%Y-%m-%d")
+            days_span = (newest_date - oldest_date).days
+            embed.add_field(name="📆 Date Range", value=f"{days_span} days", inline=True)
+        except:
+            pass
+        
+        embed.set_footer(text="💡 Use /clearlogs to clean old logs")
         return embed

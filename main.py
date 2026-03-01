@@ -39,7 +39,7 @@ async def on_message(message):
 
 async def load_cogs():
     """Cog Loader"""
-    cogs_list = ['cogs.music', 'cogs.general', 'cogs.love', 'cogs.pokemon']
+    cogs_list = ['cogs.music', 'cogs.general', 'cogs.love', 'cogs.pokemon', 'cogs.admin']
     for cog in cogs_list:
         try:
             await bot.load_extension(cog)

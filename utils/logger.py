@@ -33,8 +33,8 @@ class CustomLogger:
         console_handler.setFormatter(formatter)
         self.logger.addHandler(console_handler)
         
-        if not os.path.exists('logs'):
-            os.makedirs('logs')
+        if not os.path.exists('Lare_Logs'):
+            os.makedirs('Lare_Logs')
         
         file_formatter = logging.Formatter(
             "[%(asctime)s] [%(levelname)-8s] [%(name)s] %(message)s",
@@ -42,7 +42,7 @@ class CustomLogger:
         )
         
         file_handler = logging.FileHandler(
-            f'logs/bot_{datetime.now().strftime("%Y%m%d")}.log',
+            f'Lare_Logs/bot_{datetime.now().strftime("%Y%m%d")}.log',
             encoding='utf-8'
         )
         file_handler.setFormatter(file_formatter)
