@@ -1,12 +1,14 @@
 import discord
 from discord.ext import commands
 from utils.ui_colors import ColorPalette
+from services.embed_builder import EmbedBuilder
 
 class General(commands.Cog):
     """General commands for the bot"""
     
     def __init__(self, bot):
         self.bot = bot
+        self.embed_builder = EmbedBuilder()
     
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -29,31 +31,13 @@ class General(commands.Cog):
     @commands.hybrid_command(name="helpme", description="Provides a list of available commands")
     async def helpme(self, ctx):
         """Provides a list of available commands - automatically generated"""
-        embed = discord.Embed(
-            title="📚 Help Menu",
-            description="Here are all available commands organized by category:",
-            color=ColorPalette.INFO
+        bot_avatar_url = self.bot.user.display_avatar.url if self.bot.user.avatar else None
+        
+        embed = self.embed_builder.help_menu(
+            bot_cogs=self.bot.cogs,
+            total_commands=len(list(self.bot.commands)),
+            bot_avatar_url=bot_avatar_url
         )
-        
-        for cog_name, cog in sorted(self.bot.cogs.items()):
-            cog_commands = cog.get_commands()
-            
-            if cog_commands:
-                commands_list = []
-                for command in sorted(cog_commands, key=lambda x: x.name):
-                    description = command.description or command.help or "No description"
-                    commands_list.append(f"`/{command.name}` - {description}")
-                
-                if commands_list:
-                    cog_desc = cog.__doc__ or cog_name
-                    embed.add_field(
-                        name=f"__{cog_desc}__",
-                        value="\n".join(commands_list),
-                        inline=False
-                    )
-        
-        embed.set_footer(text=f"Total commands: {len(list(self.bot.commands))} | Use /command for details")
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url if self.bot.user.avatar else None)
         
         await ctx.send(embed=embed)
 

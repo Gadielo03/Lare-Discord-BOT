@@ -282,3 +282,35 @@ class EmbedBuilder:
         if gif_url:
             embed.set_image(url=gif_url)
         return embed
+    
+    @staticmethod
+    def help_menu(bot_cogs, total_commands, bot_avatar_url=None):
+        embed = discord.Embed(
+            title="📚 Help Menu",
+            description="Here are all available commands organized by category:",
+            color=ColorPalette.INFO
+        )
+        
+        for cog_name, cog in sorted(bot_cogs.items()):
+            cog_commands = cog.get_commands()
+            
+            if cog_commands:
+                commands_list = []
+                for command in sorted(cog_commands, key=lambda x: x.name):
+                    description = command.description or command.help or "No description"
+                    commands_list.append(f"`/{command.name}` - {description}")
+                
+                if commands_list:
+                    cog_desc = cog.__doc__ or cog_name
+                    embed.add_field(
+                        name=f"__{cog_desc}__",
+                        value="\n".join(commands_list),
+                        inline=False
+                    )
+        
+        embed.set_footer(text=f"Total commands: {total_commands} | Use /command for details")
+        
+        if bot_avatar_url:
+            embed.set_thumbnail(url=bot_avatar_url)
+        
+        return embed
