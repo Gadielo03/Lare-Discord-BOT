@@ -190,7 +190,6 @@ class Music(commands.Cog):
         
         try:
             songs = await self.youtube_service.generate_playlist_by_genre(genre, count)
-            
             if not songs:
                 await ctx.send(f"❌ Could not find songs for genre: {genre}")
                 return
@@ -199,7 +198,6 @@ class Music(commands.Cog):
                 self.queue_manager.add_song(ctx.guild.id, song)
             
             log.success(f'Generated playlist with {len(songs)} songs for {genre} in {ctx.guild.name}')
-            
             embed = self.embed_builder.playlist_generated(genre, len(songs), ctx.author.display_name)
             await ctx.send(embed=embed)
             

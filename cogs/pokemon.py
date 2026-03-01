@@ -26,9 +26,7 @@ class Pokemon(commands.Cog):
             
             opening_embed = self.embed_builder.pokemon_pack_opening(ctx.author.display_name)
             await ctx.send(embed=opening_embed)
-            
             await asyncio.sleep(2)
-            
             cards, set_info = await self.pokemon_service.open_pack(pack_size)
             
             if not cards:
@@ -37,17 +35,13 @@ class Pokemon(commands.Cog):
             
             log.success(f"Pack opened with {len(cards)} cards for {ctx.author}")
             
-            # Show set info using embed builder
             set_embed = self.embed_builder.pokemon_set_info(set_info)
             await ctx.send(embed=set_embed)
-            
             await ctx.send("🎴 **Revealing your cards...**")
             
             for i, card in enumerate(cards, 1):
                 await asyncio.sleep(1.5)
-                
                 card_embed = self.embed_builder.pokemon_card(card, self.pokemon_service)
-                
                 card_embed.set_author(name=f"Card {i}/{len(cards)}")
                 if set_info.get('symbol'):
                     card_embed.set_footer(text=set_info.get('name', 'Unknown Set'), icon_url=set_info.get('symbol'))
@@ -99,7 +93,6 @@ class Pokemon(commands.Cog):
                 summary_embed.set_thumbnail(url=set_info['logo'])
             summary_embed.description = f"**Set:** {set_info.get('name', 'Unknown')}\n" + (summary_embed.description or '')
             await msg.edit(embed=summary_embed)
-            await msg.edit(embed=summary_embed)
             
             rarest_card = max(cards, key=lambda c: self.pokemon_service._get_rarity_value(c.get("rarity", "Common")))
             
@@ -117,9 +110,7 @@ class Pokemon(commands.Cog):
         """Search for a Pokemon card by name"""
         try:
             log.info(f"{ctx.author} is searching for card: {card_name}")
-            
             await ctx.send(f"🔍 Searching for **{card_name}**...")
-            
             card = await self.pokemon_service.search_card(card_name)
             
             if not card:
@@ -128,7 +119,6 @@ class Pokemon(commands.Cog):
             
             card_embed = self.embed_builder.pokemon_card(card, self.pokemon_service)
             await ctx.send(embed=card_embed)
-            
             log.success(f"Found card {card['name']} for {ctx.author}")
             
         except Exception as e:

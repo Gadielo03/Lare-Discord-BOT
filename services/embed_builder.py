@@ -7,6 +7,16 @@ class EmbedBuilder:
     """Service for creating consistent and styled Discord embeds"""
     
     @staticmethod
+    def _add_field_if_exists(embed, data, key, name, value_format=None, inline=True):
+        value = data.get(key)
+        if value:
+            if callable(value_format):
+                value = value_format(value)
+            elif value_format:
+                value = value_format.format(value)
+            embed.add_field(name=name, value=value, inline=inline)
+    
+    @staticmethod
     def now_playing(song_info, requester):
         """Create embed for now playing"""
         embed = discord.Embed(
@@ -20,14 +30,15 @@ class EmbedBuilder:
         
         if song_info.get('duration'):
             minutes, seconds = divmod(song_info['duration'], 60)
-            embed.add_field(
-                name="Duration", 
-                value=f"{int(minutes)}:{int(seconds):02d}", 
+            EmbedBuilder._add_field_if_exists(
+                embed, 
+                {'duration': f"{int(minutes)}:{int(seconds):02d}"}, 
+                'duration', 
+                "Duration", 
                 inline=True
             )
         
-        if song_info.get('uploader'):
-            embed.add_field(name="Channel", value=song_info['uploader'], inline=True)
+        EmbedBuilder._add_field_if_exists(embed, song_info, 'uploader', "Channel", inline=True)
         
         embed.set_footer(text=f"Requested by {requester}")
         return embed
@@ -46,9 +57,11 @@ class EmbedBuilder:
         
         if song_info.get('duration'):
             minutes, seconds = divmod(song_info['duration'], 60)
-            embed.add_field(
-                name="Duration", 
-                value=f"{int(minutes)}:{int(seconds):02d}", 
+            EmbedBuilder._add_field_if_exists(
+                embed,
+                {'duration': f"{int(minutes)}:{int(seconds):02d}"},
+                'duration',
+                "Duration",
                 inline=True
             )
         
@@ -205,28 +218,27 @@ class EmbedBuilder:
             color=ColorPalette.ACCENT
         )
         
-        if card.get("hp"):
-            embed.add_field(name="HP", value=card["hp"], inline=True)
+        EmbedBuilder._add_field_if_exists(embed, card, "hp", "HP", inline=True)
         
         if card.get("types"):
             types_str = " ".join([pokemon_service.get_type_emoji(t) + t for t in card["types"]])
             embed.add_field(name="Type", value=types_str, inline=True)
         
-        embed.add_field(name="Rarity", value=f"{rarity_emoji} {card.get('rarity', 'Unknown')}", inline=True)
+        embed.add_field(
+            name="Rarity", 
+            value=f"{rarity_emoji} {card.get('rarity', 'Unknown')}", 
+            inline=True
+        )
         
-        if card.get("set"):
-            embed.add_field(name="Set", value=card["set"], inline=True)
-        
-        if card.get("number"):
-            embed.add_field(name="Number", value=f"#{card['number']}", inline=True)
+        EmbedBuilder._add_field_if_exists(embed, card, "set", "Set", inline=True)
+        EmbedBuilder._add_field_if_exists(embed, card, "number", "Number", lambda x: f"#{x}", inline=True)
         
         if card.get("artist"):
             embed.set_footer(text=f"Illustrated by {card['artist']}")
         
-        if card.get("image_large"):
-            embed.set_image(url=card["image_large"])
-        elif card.get("image"):
-            embed.set_image(url=card["image"])
+        image_url = card.get("image_large") or card.get("image")
+        if image_url:
+            embed.set_image(url=image_url)
         
         return embed
     

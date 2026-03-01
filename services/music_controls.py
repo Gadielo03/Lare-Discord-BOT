@@ -1,7 +1,6 @@
 """Music Control View - Interactive buttons for music control"""
 import discord
 from discord.ui import View, Button
-import random
 from utils.ui_colors import ColorPalette
 
 
