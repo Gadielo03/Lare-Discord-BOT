@@ -30,7 +30,7 @@ class Music(commands.Cog):
         
         if song_info:
             if self.voice_manager.is_connected(ctx.guild.id):
-                log.info(f'Playing: {song_info["title"]} in {ctx.guild.name}')
+                log.server_log(ctx.guild.id, ctx.guild.name, f'Playing: {song_info["title"]}', "INFO")
                 
                 audio_source = discord.FFmpegPCMAudio(song_info['url'])
                 after_callback = lambda e: asyncio.run_coroutine_threadsafe(
@@ -52,7 +52,7 @@ class Music(commands.Cog):
     @commands.hybrid_command(name="play", description="Play a song from YouTube or add to queue")
     async def play(self, ctx, *, param: str):
         """Add a song to the queue and play it"""
-        log.info(f'Play command invoked by {ctx.author} with query: "{param}" in {ctx.guild.name}')
+        log.server_log(ctx.guild.id, ctx.guild.name, f'{ctx.author} requested play: "{param}"', "INFO")
         
         voice_client, error = await self.voice_manager.ensure_connection(ctx)
         if error:
@@ -200,7 +200,7 @@ class Music(commands.Cog):
             log.success(f'Generated playlist with {len(songs)} songs for {genre} in {ctx.guild.name}')
             embed = self.embed_builder.playlist_generated(genre, len(songs), ctx.author.display_name)
             await ctx.send(embed=embed)
-            
+
             if not self.voice_manager.is_playing(ctx.guild.id) and not self.voice_manager.is_paused(ctx.guild.id):
                 await self.play_next(ctx)
                 

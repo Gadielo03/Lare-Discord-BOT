@@ -18,7 +18,7 @@ class Pokemon(commands.Cog):
     async def openpack(self, ctx, pack_size: int = 10):
         """Open a Pokemon card pack with random cards"""
         try:
-            log.info(f"{ctx.author} is opening a Pokemon pack")
+            log.server_log(ctx.guild.id, ctx.guild.name, f"{ctx.author} is opening a Pokemon pack (size: {pack_size})", "INFO")
             
             if pack_size < 1 or pack_size > 15:
                 await ctx.send("❌ Pack size must be between 1 and 15 cards!")

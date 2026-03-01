@@ -36,6 +36,9 @@ class CustomLogger:
         if not os.path.exists('Lare_Logs'):
             os.makedirs('Lare_Logs')
         
+        if not os.path.exists('Lare_Logs/servers'):
+            os.makedirs('Lare_Logs/servers')
+        
         file_formatter = logging.Formatter(
             "[%(asctime)s] [%(levelname)-8s] [%(name)s] %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
@@ -75,6 +78,30 @@ class CustomLogger:
     def failed(self, message):
         """Log for failed operations (ERROR with special format)"""
         self.logger.error(f"❌ {message}")
+    
+    def server_log(self, guild_id, guild_name, message, level="INFO"):
+        """Log message to both main log and server-specific log"""
+        formatted_message = f"[Server: {guild_name} ({guild_id})] {message}"
+        
+        if level == "DEBUG":
+            self.logger.debug(formatted_message)
+        elif level == "INFO":
+            self.logger.info(formatted_message)
+        elif level == "WARNING":
+            self.logger.warning(formatted_message)
+        elif level == "ERROR":
+            self.logger.error(formatted_message)
+        elif level == "CRITICAL":
+            self.logger.critical(formatted_message)
+        
+        try:
+            server_log_file = f'Lare_Logs/servers/{guild_id}_{datetime.now().strftime("%Y%m%d")}.log'
+            
+            with open(server_log_file, 'a', encoding='utf-8') as f:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"[{timestamp}] [{level.ljust(8)}] {message}\n")
+        except Exception as e:
+            self.logger.error(f"Failed to write server log: {e}")
 
 
 log = CustomLogger("Lare")

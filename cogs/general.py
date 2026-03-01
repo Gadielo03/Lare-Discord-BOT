@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from utils.ui_colors import ColorPalette
 from services.embed_builder import EmbedBuilder
+from utils.logger import log
 
 class General(commands.Cog):
     """General commands for the bot"""
@@ -31,6 +32,8 @@ class General(commands.Cog):
     @commands.hybrid_command(name="helpme", description="Provides a list of available commands")
     async def helpme(self, ctx):
         """Provides a list of available commands - automatically generated"""
+        log.server_log(ctx.guild.id, ctx.guild.name, f"{ctx.author} requested help menu", "INFO")
+        
         bot_avatar_url = self.bot.user.display_avatar.url if self.bot.user.avatar else None
         
         embed = self.embed_builder.help_menu(
